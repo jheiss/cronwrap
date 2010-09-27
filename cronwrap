@@ -1,0 +1,285 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use File::Spec;
+use File::Path;
+use Getopt::Long;
+use Pod::Usage;
+use Data::Dumper;
+# Digest::SHA supports SHA-1 and SHA-2, but alas Red Hat Enterprise only comes
+# with Digest::SHA1
+use Digest::SHA1;
+use Fcntl qw(:DEFAULT :flock :seek);  # O_* constants for sysopen, LOCK_* for flock, SEEK_* for seek
+use IPC::Open3;
+
+my $CRONWRAP_VERSION = '0.0.1';
+
+#
+# Parse command line options
+#
+
+my %options;
+my $result = GetOptions(\%options,
+                        'suppress=i',
+                        'overlap',
+                        'debug',
+                        'version',
+                        'help',
+                        'man') or pod2usage(2);
+
+# See below __END__ for usage message in POD format
+pod2usage(1) if $options{help};
+pod2usage(-exitstatus => 0, -verbose => 2) if $options{man};
+
+# Anything leftover in @ARGV is the job command and arguments
+my @cmd = @ARGV;
+
+if (!@cmd)
+{
+  pod2usage("$0: No command specified.\n");
+}
+
+print 'Command: ', Dumper(\@cmd), "\n" if ($options{debug});
+print 'Options: ', Dumper(\%options), "\n" if ($options{debug});
+
+#
+# Prep work
+#
+
+# This value for WORKDIR is open to debate.  Using a system directory like
+# /var/lib/cronwrap would restrict cronwrap to use by root, which doesn't seem
+# desirable.  Using $TMPDIR or other world writable, sticky bit enabled
+# directories makes it hard for us to come up with a way to identify what
+# directory cronwrap should use, given that we can't guarantee any specific
+# filename will be available. I.e. we can't assume /tmp/cronwrap will be
+# available for us to use.  If one instance uses mktemp and creates
+# /tmp/cronwrap.45e2f7 how is any other instance to know that's valid?  Using
+# $HOME for variable/temporary state data isn't ideal, but it's the best I'm
+# coming up with at the moment.
+my $WORKDIR = File::Spec->catfile($ENV{HOME}, '.cronwrap');
+File::Path->make_path($WORKDIR, { verbose => $options{debug} });  # Make sure the directory exists
+
+my $sha1sum = Digest::SHA1->sha1_hex(Dumper(\@cmd));
+print "Command SHA1: $sha1sum\n" if ($options{debug});
+
+my $jobdir = File::Spec->catfile($WORKDIR, $sha1sum);
+File::Path->make_path($jobdir, { verbose => $options{debug} });  # Make sure the directory exists
+my $cmdfile = File::Spec->catfile($jobdir, 'command');
+# Write out a file with the command line to make it easier for users to figure
+# out which job is associated with a directory in our working space.  A
+# directory full of SHA1 sums isn't very user friendly.
+if (! -f $cmdfile)
+{
+  open(my $cmdfh, '>', $cmdfile) or die $!;
+  print $cmdfh Dumper(\@cmd);
+  close $cmdfh;
+}
+
+#
+# Overlap protection
+#
+
+my $pidfile = File::Spec->catfile($jobdir, 'pid');
+if ($options{overlap})
+{
+  print "Overlap protection enabled, checking for existing process\n" if ($options{debug});
+  
+  # Attempt to create pid file for this job
+  print "Attempting to create PID file for job: $pidfile\n" if ($options{debug});
+  my $pidsuccess = sysopen(my $pidfh, $pidfile, O_WRONLY|O_CREAT|O_EXCL);
+  if ($pidsuccess)
+  {
+    # We put our own PID in the file for now, once we start the job below
+    # we'll update the file with the job's PID.
+    print $pidfh $$ or die $!;
+    close $pidfh;
+    print "Created PID file for process: $pidfile\n" if ($options{debug});
+  }
+  else
+  {
+    # Attempt to detect and remove stale pid files
+    print "PID file already exists, checking for staleness\n" if ($options{debug});
+    
+    # Start with locking the pid file so that we don't conflict with other
+    # cronwrap instances that might also be trying to clean up.
+    open(my $pidfh, '+<', $pidfile) or die $!;
+    my $pidlocksuccess = flock($pidfh, LOCK_EX|LOCK_NB);
+    if ($pidlocksuccess)
+    {
+      my $pid = <$pidfh>;
+      chomp $pid;
+      
+      # Use a special feature of kill (signal 0) to check if the process still
+      # exists
+      my $killsuccess = kill(0, $pid);
+      if (!$killsuccess)
+      {
+        # Process is dead, take over PID file
+        print "PID $pid no longer exists, taking over PID file\n" if ($options{debug});
+        seek($pidfh, 0, SEEK_SET) or die $!;
+        # We put our own PID in the file for now, once we start the job below
+        # we'll update the file with the job's PID.
+        print $pidfh $$ or die $!;
+        $pidsuccess = 1;
+      }
+      else
+      {
+        print "Process with PID $pid still exists\n" if ($options{debug});
+      }
+      
+      # Unlock and close file
+      flock($pidfh, LOCK_UN);
+      close($pidfh);
+    }
+    else
+    {
+      print "Failed to flock PID file: $pidfile\n" if ($options{debug});
+    }
+  }
+  
+  if (!$pidsuccess)
+  {
+    die "Job is already running\n";
+  }
+}
+
+#
+# Spawn the job
+#
+
+print "Spawning job\n" if ($options{debug});
+my ($wtr, $rdr);
+my $pid = open3($wtr, $rdr, undef, @cmd);
+# We don't have any input to send to the job
+close $wtr;
+
+# Update PID file with the job's PID
+if ($options{overlap})
+{
+  print "Updating PID file with the job's PID $pid\n" if ($options{debug});
+  open(my $pidfh, '>', $pidfile) or die $!;
+  print $pidfh $pid;
+  close $pidfh;
+}
+
+# Capture any output from the job
+print "Capturing output from job\n" if ($options{debug});
+my $output = do { local $/;  <$rdr> };
+print "Captured ", length($output), " characters of output from job\n" if ($options{debug});
+
+# Capture the exit value from the job
+print "Waiting for job to finish\n" if ($options{debug});
+waitpid($pid, 0);
+my $exitvalue = $?>>8;
+print "Job exited with value $exitvalue\n" if ($options{debug});
+
+if ($options{overlap})
+{
+  print "Removing PID file\n" if ($options{debug});
+  unlink($pidfile);
+}
+
+#
+# Failure suppression
+#
+
+my $failcount;
+my $failcountfile = File::Spec->catfile($jobdir, 'failcount');
+my $suppress_failure;
+if ($exitvalue == 0)
+{
+  $failcount = 0;
+}
+else
+{
+  # Get existing failcount for this job and increment by one
+  my $currentcount = 0;
+  if (-f $failcountfile)
+  {
+    open(my $fcfh, '<', $failcountfile) or die $!;
+    $currentcount = <$fcfh>;
+    chomp $currentcount;
+    close $fcfh;
+  }
+  $failcount = $currentcount + 1;
+  print "Failure count for this job is $failcount\n" if ($options{debug});
+  
+  if ($options{suppress} && $failcount < $options{suppress})
+  {
+    print "Suppressing output\n" if ($options{debug});
+    $suppress_failure = 1;
+  }
+}
+
+# Save failcount
+print "Saving failure count for this job\n" if ($options{debug});
+open(my $fcfh, '>', $failcountfile) or die $!;
+print $fcfh $failcount;
+close $fcfh;
+
+if (!$suppress_failure)
+{
+  print $output;
+  exit $exitvalue;
+}
+else
+{
+  exit 0;
+}
+
+__END__
+
+=head1 NAME
+
+cronwrap - General purpose cron job wrapper
+
+=head1 SYNOPSIS
+
+cronwrap [options] [command and args ...]
+
+Options:
+--suppress=COUNT
+--overlap
+--debug
+--version
+--help
+--man
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--suppress> COUNT
+
+Suppress non-zero exit values and output unless the job has COUNT consecutive
+failures.
+
+=item B<--overlap>
+
+Prevent multiple simultaneous copies of job.
+
+=item B<--debug>
+
+Print lots of messages about what cronwrap is doing.
+
+=item B<--version>
+
+Print cronwrap version and exits.
+
+=item B<--help>
+
+Print a brief help message and exits.
+
+=item B<--man>
+
+Prints the manual page and exits.
+
+=back
+
+=head1 DESCRIPTION
+
+B<cronwrap> provides various commonly required maintenance and sanity checks
+for regularly scheduled cron jobs.
+
+=cut
