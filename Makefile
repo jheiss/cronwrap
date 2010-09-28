@@ -18,6 +18,16 @@ dist: test
 tag:
 	git tag $(TAGNAME)
 
+tpkg:
+	mkdir tpkgwork
+	sed 's/%VERSION%/$(VER)/' tpkg.yml > tpkgwork/tpkg.yml
+	mkdir -p tpkgwork/reloc/bin
+	cp -p cronwrap tpkgwork/reloc/bin
+	mkdir -p tpkgwork/reloc/share/doc/cronwrap-$(VER)
+	cp -p README TODO tpkgwork/reloc/share/doc/cronwrap-$(VER)
+	tpkg --make tpkgwork
+	rm -rf tpkgwork
+
 clean:
-	rm cronwrap-*.tar.gz*
+	rm cronwrap-*.tar.gz* cronwrap-*.tpkg
 

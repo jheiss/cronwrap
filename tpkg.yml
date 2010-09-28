@@ -1,0 +1,14 @@
+name: cronwrap
+version: %VERSION%
+maintainer: https://github.com/inbox/new/jheiss
+description: This is a wrapper for cron jobs which implements common housekeeping tasks.
+bugreporting: http://github.com/jheiss/cronwrap/issues
+dependencies:
+  - name: perl
+  
+files:
+  files:
+    - path: bin/cronwrap
+      posix:
+        perms: 0555
+
