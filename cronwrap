@@ -58,13 +58,13 @@ print 'Options: ', Dumper(\%options), "\n" if ($options{debug});
 # $HOME for variable/temporary state data isn't ideal, but it's the best I'm
 # coming up with at the moment.
 my $WORKDIR = File::Spec->catfile($ENV{HOME}, '.cronwrap');
-File::Path->make_path($WORKDIR, { verbose => $options{debug} });  # Make sure the directory exists
+mkpath($WORKDIR, $options{debug});  # Make sure the directory exists
 
 my $sha1sum = Digest::SHA1->sha1_hex(Dumper(\@cmd));
 print "Command SHA1: $sha1sum\n" if ($options{debug});
 
 my $jobdir = File::Spec->catfile($WORKDIR, $sha1sum);
-File::Path->make_path($jobdir, { verbose => $options{debug} });  # Make sure the directory exists
+mkpath($jobdir, $options{debug});  # Make sure the directory exists
 my $cmdfile = File::Spec->catfile($jobdir, 'command');
 # Write out a file with the command line to make it easier for users to figure
 # out which job is associated with a directory in our working space.  A
