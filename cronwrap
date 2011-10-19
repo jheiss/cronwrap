@@ -94,7 +94,9 @@ if ($options{jitter})
   # the environment.
   srand(hex(substr(Digest::SHA1->sha1_hex(hostname()), -8)));
   
-  sleep(int(rand(parse_time_delta($options{jitter}))));
+  my $delay = int(rand(parse_time_delta($options{jitter})));
+  print "Jitter delay of $delay seconds\n" if ($options{debug});
+  sleep($delay);
 }
 
 #
@@ -177,6 +179,7 @@ if ($options{overlap})
 
 if ($options{nice})
 {
+  print "Setting priority to $options{nice}\n" if ($options{debug});
   POSIX::nice($options{nice}) or die "nice $options{nice}: $!\n";
 }
 
