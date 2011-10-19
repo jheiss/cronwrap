@@ -1,9 +1,10 @@
 This cronwrap has some interesting features around warning or terminating jobs
 that run longer than expected:  http://www.uow.edu.au/~sah/cronwrap.html
+
 Release entry on freshmeat associated with this cronwrap mentions a few other
 interesting features.  http://freshmeat.net/projects/cronwrap/
 - Setting nice value
-- Jitter delay
+- Jitter delay (now implemented)
 
 This one is much simpler, but also does the warning if job runs longer than
 expected:  http://pypi.python.org/pypi/cronwrap
