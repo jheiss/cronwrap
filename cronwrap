@@ -8,6 +8,7 @@ use Getopt::Long;
 use Pod::Usage;
 use Data::Dumper;
 use Sys::Hostname;
+use POSIX qw(nice);
 # Digest::SHA supports SHA-1 and SHA-2, but alas Red Hat Enterprise only comes
 # with Digest::SHA1
 use Digest::SHA1;
@@ -25,6 +26,7 @@ my $result = GetOptions(\%options,
                         'suppress=i',
                         'overlap',
                         'jitter=s',
+                        'nice=i',
                         'debug',
                         'version',
                         'help',
@@ -164,6 +166,21 @@ if ($options{overlap})
 }
 
 #
+# Priority
+#
+# Note this is specifically placed after overlap protection.  If running on a
+# system with a higher priority process consuming 100% of CPU this process
+# will not make any forward progress once it drops its priority.  As such, if
+# we dropped priority before performing overlap protection we'd build up
+# instances of this process all waiting for a chance to run.
+#
+
+if ($options{nice})
+{
+  POSIX::nice($options{nice}) or die "nice $options{nice}: $!\n";
+}
+
+#
 # Spawn the job
 #
 
@@ -288,6 +305,7 @@ Options:
 --suppress=COUNT
 --overlap
 --jitter=TIME
+--nice=PRIORITY
 --debug
 --version
 --help
@@ -310,6 +328,10 @@ Prevent multiple simultaneous copies of job.
 
 Random delay up to specified maximum before starting the job. Jitter specified
 as time delta like 5m or 1h.
+
+=item B<--nice> PRIORITY
+
+Set process priority, a la the utility nice
 
 =item B<--debug>
 
