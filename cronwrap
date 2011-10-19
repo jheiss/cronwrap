@@ -23,6 +23,7 @@ my %options;
 my $result = GetOptions(\%options,
                         'suppress=i',
                         'overlap',
+                        'jitter=i',
                         'debug',
                         'version',
                         'help',
@@ -242,6 +243,7 @@ cronwrap [options] [command and args ...]
 Options:
 --suppress=COUNT
 --overlap
+--jitter=MINUTES
 --debug
 --version
 --help
@@ -260,6 +262,10 @@ failures.
 
 Prevent multiple simultaneous copies of job.
 
+=item B<--jitter> MINUTES
+
+Random delay up to specified maximum before starting the job
+
 =item B<--debug>
 
 Print lots of messages about what cronwrap is doing.
@@ -274,7 +280,7 @@ Print a brief help message and exits.
 
 =item B<--man>
 
-Prints the manual page and exits.
+Display manual.
 
 =back
 
