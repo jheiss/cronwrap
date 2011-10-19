@@ -30,11 +30,12 @@ foreach my $helpline (@help)
     $longest_help_line = length($helpline);
   }
 }
-ok($longest_help_line <= 80, 'help output columns');
+cmp_ok($longest_help_line, '<=', 80, 'help output columns');
 $number_of_tests_run++;
 
-ok(scalar(@help) <= 23, 'help output lines');
-$number_of_tests_run++;
+# Too many options now for 23 lines
+# cmp_ok(scalar(@help), '<=', 23, 'help output lines');
+# $number_of_tests_run++;
 
 done_testing($number_of_tests_run);
 
