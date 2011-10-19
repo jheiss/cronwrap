@@ -190,6 +190,7 @@ my $suppress_failure;
 if ($exitvalue == 0)
 {
   $failcount = 0;
+  $suppress_failure = 1;
 }
 else
 {
