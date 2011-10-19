@@ -5,6 +5,7 @@ TAGNAME=v$(VER)
 all: dist
 
 test:
+	prove
 
 dist: test
 	mkdir cronwrap-$(VER)

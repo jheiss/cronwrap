@@ -1,0 +1,33 @@
+#!/usr/bin/env perl
+
+# This is a test program used by the test suite.  It takes a single argument
+# of a filename.  If that file contains the string 'succeed' then this command
+# will exit with a 0 status.  If the file contains the string 'fail' then this
+# command will exit with a 1 status.
+#
+# The test suite needs a command that can be made to succeed or fail as needed
+# without changing the command line arguments (since cronwrap identifies
+# commands by the hash of their name and arguments).
+
+open(my $triggerfh, '<', $ARGV[0]);
+my $trigger = <$triggerfh>;
+chomp($trigger);
+close($triggerfh);
+# print "trigger: $trigger\n";
+
+if ($trigger eq 'succeed')
+{
+  print "tester is succeeding\n";
+  exit 0;
+}
+elsif ($trigger eq 'fail')
+{
+  print "tester is failing\n";
+  exit 1;
+}
+else
+{
+  print "tester input file has unrecognized content '$trigger'\n";
+  exit 5;
+}
+
