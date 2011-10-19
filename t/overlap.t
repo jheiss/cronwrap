@@ -49,8 +49,7 @@ if ($pid)
 else
 {
   # Child
-  system('./cronwrap --overlap sleep 3');
-  exit;
+  exec('./cronwrap --overlap sleep 3');
 }
 
 done_testing($number_of_tests_run);
