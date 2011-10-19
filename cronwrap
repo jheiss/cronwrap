@@ -15,7 +15,7 @@ use Digest::SHA1;
 use Fcntl qw(:DEFAULT :flock :seek);  # O_* constants for sysopen, LOCK_* for flock, SEEK_* for seek
 use IPC::Open3;
 
-my $CRONWRAP_VERSION = '0.0.1';
+my $CRONWRAP_VERSION = '0.0.4';
 
 #
 # Parse command line options
