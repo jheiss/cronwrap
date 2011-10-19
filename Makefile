@@ -18,6 +18,7 @@ dist: test
 
 tag:
 	git tag $(TAGNAME)
+	git push --tags
 
 tpkg:
 	mkdir tpkgwork
