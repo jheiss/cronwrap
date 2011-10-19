@@ -18,7 +18,12 @@ isnt($?, 0, '--jitter requires an argument');
 $number_of_tests_run++;
 
 #
-# Ensure that the argument must be a positive integer
+# Ensure that the argument must be a time delta
+#
+# It would be nice to unit test the parse_time_delta subroutine, but I don't
+# know how to do that without moving it to a library file, which would
+# complicate installation for users.  I like the simplicity of having cronwrap
+# be a single, standalone executable.
 #
 
 system('./cronwrap --jitter bogus true > /dev/null 2>&1');
@@ -30,6 +35,9 @@ $number_of_tests_run++;
 system('./cronwrap --jitter -1 true > /dev/null 2>&1');
 isnt($?, 0, '--jitter rejects -1');
 $number_of_tests_run++;
+system('./cronwrap --jitter 1r true > /dev/null 2>&1');
+isnt($?, 0, '--jitter rejects 1r');
+$number_of_tests_run++;
 
 #
 # I actually don't know how to test that the job was delayed, as some machines
@@ -38,14 +46,14 @@ $number_of_tests_run++;
 
 #
 # However, we do expect the jitter to be consistent on any given machine. That
-# we can test.  One minute (--jitter 1) is good enough for testing as cronwrap
+# we can test.  One minute (--jitter 1m) is good enough for testing as cronwrap
 # actually sleeps for a random number of seconds, so even with one minute of
 # jitter cronwrap will sleep anywhere from 0-59 seconds.
 #
 
 # Time one run
 my $start = time;
-system('./cronwrap --jitter 1 true');
+system('./cronwrap --jitter 1m true');
 my $end = time;
 
 my $elapsed = $end - $start;
@@ -54,7 +62,7 @@ my $elapsed = $end - $start;
 foreach (1, 2)
 {
   my $start = time;
-  system('./cronwrap --jitter 1 true');
+  system('./cronwrap --jitter 1m true');
   my $end = time;
   
   my $test_elapsed = $end - $start;

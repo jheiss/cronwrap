@@ -24,7 +24,7 @@ my %options;
 my $result = GetOptions(\%options,
                         'suppress=i',
                         'overlap',
-                        'jitter=i',
+                        'jitter=s',
                         'debug',
                         'version',
                         'help',
@@ -33,7 +33,7 @@ my $result = GetOptions(\%options,
 # See below __END__ for usage message in POD format
 pod2usage(1) if $options{help};
 pod2usage(1) if defined $options{suppress} && $options{suppress} <= 0;
-pod2usage(1) if defined $options{jitter} && $options{jitter} <= 0;
+pod2usage(1) if defined $options{jitter} && !parse_time_delta($options{jitter});
 pod2usage(-exitstatus => 0, -verbose => 2) if $options{man};
 
 # Anything leftover in @ARGV is the job command and arguments
@@ -92,8 +92,7 @@ if ($options{jitter})
   # the environment.
   srand(hex(substr(Digest::SHA1->sha1_hex(hostname()), -8)));
   
-  # Option is specified in minutes, sleep expects seconds
-  sleep(int(rand($options{jitter} * 60)));
+  sleep(int(rand(parse_time_delta($options{jitter}))));
 }
 
 #
@@ -249,6 +248,32 @@ else
   exit 0;
 }
 
+# Date::Manip has support for parsing deltas but we don't want to depend on
+# non-core modules (to avoid installation hassles)
+sub parse_time_delta
+{
+  my $deltastring = shift;
+  my $delta;
+  
+  if ($deltastring =~ /^(\d+)s$/) {
+    $delta = $1;
+  } elsif ($deltastring =~ /^(\d+)m$/) {
+    $delta = $1 * 60;
+  } elsif ($deltastring =~ /^(\d+)h$/) {
+    $delta = $1 * 60 * 60;
+  } elsif ($deltastring =~ /^(\d+)d$/) {
+    $delta = $1 * 60 * 60 * 24;
+  } elsif ($deltastring =~ /^(\d+)w$/) {
+    $delta = $1 * 60 * 60 * 24 * 7;
+  } elsif ($deltastring =~ /^(\d+)m$/) {
+    $delta = $1 * 60 * 60 * 24 * 28;
+  } elsif ($deltastring =~ /^(\d+)y$/) {
+    $delta = $1 * 60 * 60 * 24 * 365;
+  }
+  
+  return $delta;
+}
+
 __END__
 
 =head1 NAME
@@ -262,7 +287,7 @@ cronwrap [options] [command and args ...]
 Options:
 --suppress=COUNT
 --overlap
---jitter=MINUTES
+--jitter=TIME
 --debug
 --version
 --help
@@ -281,9 +306,10 @@ failures.
 
 Prevent multiple simultaneous copies of job.
 
-=item B<--jitter> MINUTES
+=item B<--jitter> TIME
 
-Random delay up to specified maximum before starting the job
+Random delay up to specified maximum before starting the job. Jitter specified
+as time delta like 5m or 1h.
 
 =item B<--debug>
 
