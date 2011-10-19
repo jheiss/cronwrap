@@ -23,13 +23,13 @@ $number_of_tests_run++;
 # Ensure that the argument must be a positive integer
 #
 
-system('./cronwrap --suppress bogus > /dev/null 2>&1');
+system('./cronwrap --suppress bogus true > /dev/null 2>&1');
 isnt($?, 0, '--suppress rejects string');
 $number_of_tests_run++;
-system('./cronwrap --suppress 0 > /dev/null 2>&1');
+system('./cronwrap --suppress 0 true > /dev/null 2>&1');
 isnt($?, 0, '--suppress rejects 0');
 $number_of_tests_run++;
-system('./cronwrap --suppress -1 > /dev/null 2>&1');
+system('./cronwrap --suppress -1 true > /dev/null 2>&1');
 isnt($?, 0, '--suppress rejects -1');
 $number_of_tests_run++;
 

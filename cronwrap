@@ -7,6 +7,7 @@ use File::Path;
 use Getopt::Long;
 use Pod::Usage;
 use Data::Dumper;
+use Sys::Hostname;
 # Digest::SHA supports SHA-1 and SHA-2, but alas Red Hat Enterprise only comes
 # with Digest::SHA1
 use Digest::SHA1;
@@ -31,6 +32,8 @@ my $result = GetOptions(\%options,
 
 # See below __END__ for usage message in POD format
 pod2usage(1) if $options{help};
+pod2usage(1) if defined $options{suppress} && $options{suppress} <= 0;
+pod2usage(1) if defined $options{jitter} && $options{jitter} <= 0;
 pod2usage(-exitstatus => 0, -verbose => 2) if $options{man};
 
 # Anything leftover in @ARGV is the job command and arguments
@@ -75,6 +78,22 @@ if (! -f $cmdfile)
   open(my $cmdfh, '>', $cmdfile) or die $!;
   print $cmdfh Dumper(\@cmd);
   close $cmdfh;
+}
+
+#
+# Jitter
+#
+
+if ($options{jitter})
+{
+  # Seed the random number generator with the hostname of this box so that
+  # we get a consistent random number.  We want to run the registration at a
+  # consistent time on each individual box, but randomize the runs across
+  # the environment.
+  srand(hex(substr(Digest::SHA1->sha1_hex(hostname()), -8)));
+  
+  # Option is specified in minutes, sleep expects seconds
+  sleep(int(rand($options{jitter} * 60)));
 }
 
 #

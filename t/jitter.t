@@ -21,13 +21,13 @@ $number_of_tests_run++;
 # Ensure that the argument must be a positive integer
 #
 
-system('./cronwrap --jitter bogus > /dev/null 2>&1');
+system('./cronwrap --jitter bogus true > /dev/null 2>&1');
 isnt($?, 0, '--jitter rejects string');
 $number_of_tests_run++;
-system('./cronwrap --jitter 0 > /dev/null 2>&1');
+system('./cronwrap --jitter 0 true > /dev/null 2>&1');
 isnt($?, 0, '--jitter rejects 0');
 $number_of_tests_run++;
-system('./cronwrap --jitter -1 > /dev/null 2>&1');
+system('./cronwrap --jitter -1 true > /dev/null 2>&1');
 isnt($?, 0, '--jitter rejects -1');
 $number_of_tests_run++;
 
@@ -37,13 +37,15 @@ $number_of_tests_run++;
 #
 
 #
-# However, we do expect the jitter to be consistent on any given machine. 
-# That we can test
+# However, we do expect the jitter to be consistent on any given machine. That
+# we can test.  One minute (--jitter 1) is good enough for testing as cronwrap
+# actually sleeps for a random number of seconds, so even with one minute of
+# jitter cronwrap will sleep anywhere from 0-59 seconds.
 #
 
 # Time one run
 my $start = time;
-system('./cronwrap --jitter 5 true');
+system('./cronwrap --jitter 1 true');
 my $end = time;
 
 my $elapsed = $end - $start;
@@ -52,7 +54,7 @@ my $elapsed = $end - $start;
 foreach (1, 2)
 {
   my $start = time;
-  system('./cronwrap --jitter 15 true');
+  system('./cronwrap --jitter 1 true');
   my $end = time;
   
   my $test_elapsed = $end - $start;
