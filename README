@@ -3,6 +3,7 @@ This is a wrapper for cron jobs which implements common housekeeping tasks.
 - Failure suppression
 - Overlap protection
 - Jitter
+- Priority
 
 Failure Suppression
 -------------------
@@ -28,4 +29,9 @@ Jitter
 If enabled cronwrap will delay for a random amount of time up to a specified
 maximum before starting the job. This is useful for jobs that run on many
 machines but access a centralized service.
+
+Priority
+--------
+
+Set the priority, aka "nice" the job.
 
