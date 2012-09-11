@@ -23,10 +23,10 @@ my $CRONWRAP_VERSION = '0.0.4';
 
 my %options;
 my $result = GetOptions(\%options,
-                        'suppress=i',
-                        'overlap',
                         'jitter=s',
+                        'overlap',
                         'nice=i',
+                        'suppress=i',
                         'debug',
                         'version',
                         'help',
@@ -305,10 +305,10 @@ cronwrap - General purpose cron job wrapper
 cronwrap [options] [command and args ...]
 
 Options:
---suppress=COUNT
---overlap
 --jitter=TIME
+--overlap
 --nice=PRIORITY
+--suppress=COUNT
 --debug
 --version
 --help
@@ -318,23 +318,23 @@ Options:
 
 =over 8
 
-=item B<--suppress> COUNT
-
-Suppress non-zero exit values and output unless the job has COUNT consecutive
-failures.
-
-=item B<--overlap>
-
-Prevent multiple simultaneous copies of job.
-
 =item B<--jitter> TIME
 
 Random delay up to specified maximum before starting the job. Jitter specified
 as time delta like 5m or 1h.
 
+=item B<--overlap>
+
+Prevent multiple simultaneous copies of job.
+
 =item B<--nice> PRIORITY
 
 Set process priority, a la the utility nice
+
+=item B<--suppress> COUNT
+
+Suppress non-zero exit values and output unless the job has COUNT consecutive
+failures.
 
 =item B<--debug>
 
