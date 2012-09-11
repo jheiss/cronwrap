@@ -27,9 +27,11 @@ while the previous job is still running.
 
 If enabled cronwrap will delay for a random amount of time up to a specified
 maximum before starting the job. This is useful for jobs that run on many
-machines but access a centralized service.
+machines but access a centralized service. The random number generator is
+seeded with the hostname of the machine so that the job runs at a consistent
+time on each machine.
 
 # Priority #
 
-Set the priority, aka "nice" the job.
+Set the priority, i.e. "nice" the job.
 
