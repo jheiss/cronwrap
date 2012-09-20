@@ -14,7 +14,7 @@ my $number_of_tests_run = 0;
 #
 
 system('./cronwrap --nice > /dev/null 2>&1');
-isnt($?, 0, '--nice requires an argument');
+isnt($?>>8, 0, '--nice requires an argument');
 $number_of_tests_run++;
 
 #
@@ -22,13 +22,13 @@ $number_of_tests_run++;
 #
 
 system('./cronwrap --nice bogus true > /dev/null 2>&1');
-isnt($?, 0, '--nice rejects string');
+isnt($?>>8, 0, '--nice rejects string');
 $number_of_tests_run++;
 system('./cronwrap --nice bogus 1.0 > /dev/null 2>&1');
-isnt($?, 0, '--nice rejects 1.0');
+isnt($?>>8, 0, '--nice rejects 1.0');
 $number_of_tests_run++;
 system('./cronwrap --nice bogus 1.5 > /dev/null 2>&1');
-isnt($?, 0, '--nice rejects 1.5');
+isnt($?>>8, 0, '--nice rejects 1.5');
 $number_of_tests_run++;
 
 #
@@ -36,7 +36,7 @@ $number_of_tests_run++;
 #
 
 system('./cronwrap --nice -1 true > /dev/null 2>&1');
-isnt($?, 0, '--nice -1 fails');
+isnt($?>>8, 0, '--nice -1 fails');
 $number_of_tests_run++;
 
 #
@@ -44,7 +44,7 @@ $number_of_tests_run++;
 #
 
 system('./cronwrap --nice 0 true > /dev/null 2>&1');
-is($?, 0, '--nice 0 succeeds');
+is($?>>8, 0, '--nice 0 succeeds');
 $number_of_tests_run++;
 verify_priority(0);
 
@@ -55,11 +55,11 @@ verify_priority(0);
 
 
 system('./cronwrap --nice 1 true > /dev/null 2>&1');
-is($?, 0, '--nice 1 succeeds');
+is($?>>8, 0, '--nice 1 succeeds');
 $number_of_tests_run++;
 verify_priority(1);
 system('./cronwrap --nice 10 true > /dev/null 2>&1');
-is($?, 0, '--nice 10 succeeds');
+is($?>>8, 0, '--nice 10 succeeds');
 $number_of_tests_run++;
 verify_priority(10);
 

@@ -16,7 +16,7 @@ my $number_of_tests_run = 0;
 #
 
 system('./cronwrap --suppress > /dev/null 2>&1');
-isnt($?, 0, '--suppress requires an argument');
+isnt($?>>8, 0, '--suppress requires an argument');
 $number_of_tests_run++;
 
 #
@@ -24,13 +24,13 @@ $number_of_tests_run++;
 #
 
 system('./cronwrap --suppress bogus true > /dev/null 2>&1');
-isnt($?, 0, '--suppress rejects string');
+isnt($?>>8, 0, '--suppress rejects string');
 $number_of_tests_run++;
 system('./cronwrap --suppress 0 true > /dev/null 2>&1');
-isnt($?, 0, '--suppress rejects 0');
+isnt($?>>8, 0, '--suppress rejects 0');
 $number_of_tests_run++;
 system('./cronwrap --suppress -1 true > /dev/null 2>&1');
-isnt($?, 0, '--suppress rejects -1');
+isnt($?>>8, 0, '--suppress rejects -1');
 $number_of_tests_run++;
 
 #
