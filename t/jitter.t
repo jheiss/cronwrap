@@ -14,7 +14,7 @@ my $number_of_tests_run = 0;
 #
 
 system('./cronwrap --jitter > /dev/null 2>&1');
-isnt($?, 0, '--jitter requires an argument');
+isnt($?>>8, 0, '--jitter requires an argument');
 $number_of_tests_run++;
 
 #
@@ -27,17 +27,39 @@ $number_of_tests_run++;
 #
 
 system('./cronwrap --jitter bogus true > /dev/null 2>&1');
-isnt($?, 0, '--jitter rejects string');
+isnt($?>>8, 0, '--jitter rejects string');
 $number_of_tests_run++;
 system('./cronwrap --jitter 0 true > /dev/null 2>&1');
-isnt($?, 0, '--jitter rejects 0');
+isnt($?>>8, 0, '--jitter rejects 0');
 $number_of_tests_run++;
 system('./cronwrap --jitter -1 true > /dev/null 2>&1');
-isnt($?, 0, '--jitter rejects -1');
+isnt($?>>8, 0, '--jitter rejects -1');
 $number_of_tests_run++;
 system('./cronwrap --jitter 1r true > /dev/null 2>&1');
-isnt($?, 0, '--jitter rejects 1r');
+isnt($?>>8, 0, '--jitter rejects 1r');
 $number_of_tests_run++;
+
+system('./cronwrap --jitter 1s true > /dev/null 2>&1');
+is($?>>8, 0, '--jitter accepts 1s');
+$number_of_tests_run++;
+system('./cronwrap --jitter 1m true > /dev/null 2>&1');
+is($?>>8, 0, '--jitter accepts 1m');
+$number_of_tests_run++;
+# system('./cronwrap --jitter 1h true > /dev/null 2>&1');
+# is($?>>8, 0, '--jitter accepts 1h');
+# $number_of_tests_run++;
+# system('./cronwrap --jitter 1d true > /dev/null 2>&1');
+# is($?>>8, 0, '--jitter accepts 1d');
+# $number_of_tests_run++;
+# system('./cronwrap --jitter 1w true > /dev/null 2>&1');
+# is($?>>8, 0, '--jitter accepts 1w');
+# $number_of_tests_run++;
+# system('./cronwrap --jitter 1mo true > /dev/null 2>&1');
+# is($?>>8, 0, '--jitter accepts 1mo');
+# $number_of_tests_run++;
+# system('./cronwrap --jitter 1y true > /dev/null 2>&1');
+# is($?>>8, 0, '--jitter accepts 1y');
+# $number_of_tests_run++;
 
 #
 # I actually don't know how to test that the job was delayed, as some machines
