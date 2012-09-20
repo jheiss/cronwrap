@@ -1,10 +1,4 @@
-This cronwrap has some interesting features around warning or terminating jobs
-that run longer than expected:  http://www.uow.edu.au/~sah/cronwrap.html
-
-This one is much simpler, but also does the warning if job runs longer than
-expected:  http://pypi.python.org/pypi/cronwrap
-
-A variant of the overtime feature I'd like is an option to kill the older job
+A variant of the overlap feature I'd like is an option to kill the older job
 on the assumption that it is stuck. In this mode of operation cronwrap should
 attempt to kill the old job, then check to see if it actually exited. If not
 abort, if so proceed with starting a new instance of the job.

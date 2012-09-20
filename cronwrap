@@ -8,7 +8,7 @@ use Getopt::Long;
 use Pod::Usage;
 use Data::Dumper;
 use Sys::Hostname;
-use POSIX qw(nice);
+use POSIX qw(nice sys_wait_h);  # POSIX::nice, WNOHANG for waitpid
 # Digest::SHA supports SHA-1 and SHA-2, but alas Red Hat Enterprise only comes
 # with Digest::SHA1
 use Digest::SHA1;
@@ -26,6 +26,7 @@ my $result = GetOptions(\%options,
                         'jitter=s',
                         'overlap',
                         'nice=i',
+                        'timeout=s',
                         'suppress=i',
                         'debug',
                         'version',
@@ -36,6 +37,7 @@ my $result = GetOptions(\%options,
 pod2usage(1) if $options{help};
 pod2usage(1) if defined $options{suppress} && $options{suppress} <= 0;
 pod2usage(1) if defined $options{jitter} && !parse_time_delta($options{jitter});
+pod2usage(1) if defined $options{timeout} && !parse_time_delta($options{timeout});
 pod2usage(-exitstatus => 0, -verbose => 2) if $options{man};
 
 # Anything leftover in @ARGV is the job command and arguments
@@ -187,31 +189,74 @@ if ($options{nice})
 # Spawn the job
 #
 
-print "Spawning job\n" if ($options{debug});
-my ($wtr, $rdr);
-my $pid = open3($wtr, $rdr, undef, @cmd);
-# We don't have any input to send to the job
-close $wtr;
-
-# Update PID file with the job's PID
-if ($options{overlap})
+my $pid;
+my $output;
+my $exitvalue;
+eval
 {
-  print "Updating PID file with the job's PID $pid\n" if ($options{debug});
-  open(my $pidfh, '>', $pidfile) or die $!;
-  print $pidfh $pid;
-  close $pidfh;
+  local $SIG{ALRM} = sub { die "timeout\n" };
+  if ($options{timeout})
+  {
+    print "Timeout enabled, setting alarm to $options{timeout}\n" if ($options{debug});
+    alarm parse_time_delta($options{timeout});
+  }
+  
+  print "Spawning job\n" if ($options{debug});
+  my ($wtr, $rdr);
+  $pid = open3($wtr, $rdr, undef, @cmd);
+  # We don't have any input to send to the job
+  close $wtr;
+  
+  # Update PID file with the job's PID
+  if ($options{overlap})
+  {
+    print "Updating PID file with the job's PID $pid\n" if ($options{debug});
+    open(my $pidfh, '>', $pidfile) or die $!;
+    print $pidfh $pid;
+    close $pidfh;
+  }
+  
+  # Capture any output from the job
+  print "Capturing output from job\n" if ($options{debug});
+  $output = do { local $/;  <$rdr> };
+  print "Captured ", length($output), " characters of output from job\n" if ($options{debug});
+  
+  # Capture the exit value from the job
+  print "Waiting for job to finish\n" if ($options{debug});
+  waitpid($pid, 0);
+  $exitvalue = $?>>8;
+  print "Job exited with value $exitvalue\n" if ($options{debug});
+  
+  alarm 0;
+};
+if ($@) {
+  die unless $@ eq "timeout\n";   # propagate unexpected errors
+  
+  print "Process timed out, sending SIGTERM\n" if ($options{debug});
+  kill 'TERM', $pid;
+  my $needs_kill = 1;
+  foreach (1 .. 5)
+  {
+    if (waitpid($pid, WNOHANG))
+    {
+      $needs_kill = 0;
+      last;
+    }
+    sleep 1;
+  }
+  if ($needs_kill)
+  {
+    print "Process did not die, sending SIGKILL\n" if ($options{debug});
+    kill 'KILL', $pid;
+  }
+  
+  if ($output && $output !~ /\n$/)
+  {
+    $output .= "\n";
+  }
+  $output .= "Process time out, terminated\n";
+  $exitvalue = -1;
 }
-
-# Capture any output from the job
-print "Capturing output from job\n" if ($options{debug});
-my $output = do { local $/;  <$rdr> };
-print "Captured ", length($output), " characters of output from job\n" if ($options{debug});
-
-# Capture the exit value from the job
-print "Waiting for job to finish\n" if ($options{debug});
-waitpid($pid, 0);
-my $exitvalue = $?>>8;
-print "Job exited with value $exitvalue\n" if ($options{debug});
 
 if ($options{overlap})
 {
@@ -285,7 +330,7 @@ sub parse_time_delta
     $delta = $1 * 60 * 60 * 24;
   } elsif ($deltastring =~ /^(\d+)w$/) {
     $delta = $1 * 60 * 60 * 24 * 7;
-  } elsif ($deltastring =~ /^(\d+)m$/) {
+  } elsif ($deltastring =~ /^(\d+)mo$/) {
     $delta = $1 * 60 * 60 * 24 * 28;
   } elsif ($deltastring =~ /^(\d+)y$/) {
     $delta = $1 * 60 * 60 * 24 * 365;
@@ -308,6 +353,7 @@ Options:
 --jitter=TIME
 --overlap
 --nice=PRIORITY
+--timeout=TIME
 --suppress=COUNT
 --debug
 --version
@@ -330,6 +376,11 @@ Prevent multiple simultaneous copies of job.
 =item B<--nice> PRIORITY
 
 Set process priority, a la the utility nice
+
+=item B<--timeout> TIME
+
+Terminate job if it runs longer than given time, which is specified in the
+same format as jitter.
 
 =item B<--suppress> COUNT
 

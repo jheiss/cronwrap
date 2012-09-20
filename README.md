@@ -4,6 +4,7 @@ This is a wrapper for cron jobs which implements common housekeeping tasks.
 
 - Jitter
 - Overlap protection
+- Timeout
 - Failure suppression
 - Priority
 
@@ -22,6 +23,12 @@ example, you have a job that runs once an hour and usually completes in a
 minute. However, there's a chance it will get stuck and take more than an hour
 or even hang forever. You might not want cron to start another copy of the job
 while the previous job is still running.
+
+# Timeout #
+
+If enabled cronwrap will terminate the process if it runs longer than the
+specified timeout.  A SIGTERM will be sent to the job followed by a SIGKILL
+after 5 seconds.
 
 # Priority #
 
