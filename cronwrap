@@ -320,7 +320,7 @@ sub parse_time_delta
   my $deltastring = shift;
   my $delta;
   
-  if ($deltastring =~ /^(\d+)s$/) {
+  if ($deltastring =~ /^(\d+)s?$/) {
     $delta = $1;
   } elsif ($deltastring =~ /^(\d+)m$/) {
     $delta = $1 * 60;
@@ -334,6 +334,10 @@ sub parse_time_delta
     $delta = $1 * 60 * 60 * 24 * 28;
   } elsif ($deltastring =~ /^(\d+)y$/) {
     $delta = $1 * 60 * 60 * 24 * 365;
+  }
+  
+  if ($1 <= 0) {
+    undef $delta;
   }
   
   return $delta;

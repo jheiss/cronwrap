@@ -39,6 +39,9 @@ system('./cronwrap --jitter 1r true > /dev/null 2>&1');
 isnt($?>>8, 0, '--jitter rejects 1r');
 $number_of_tests_run++;
 
+system('./cronwrap --jitter 1 true > /dev/null 2>&1');
+is($?>>8, 0, '--jitter accepts 1');
+$number_of_tests_run++;
 system('./cronwrap --jitter 1s true > /dev/null 2>&1');
 is($?>>8, 0, '--jitter accepts 1s');
 $number_of_tests_run++;
