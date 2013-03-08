@@ -9,9 +9,11 @@ use Pod::Usage;
 use Data::Dumper;
 use Sys::Hostname;
 use POSIX qw(nice sys_wait_h);  # POSIX::nice, WNOHANG for waitpid
+use Try::Tiny;
 # Digest::SHA supports SHA-1 and SHA-2, but alas Red Hat Enterprise only comes
 # with Digest::SHA1
-use Digest::SHA1;
+try {require Digest::SHA1;}
+finally {require Digest::SHA;};
 use Fcntl qw(:DEFAULT :flock :seek);  # O_* constants for sysopen, LOCK_* for flock, SEEK_* for seek
 use IPC::Open3;
 
@@ -68,7 +70,10 @@ print 'Options: ', Dumper(\%options), "\n" if ($options{debug});
 my $WORKDIR = File::Spec->catfile($ENV{HOME}, '.cronwrap');
 mkpath($WORKDIR, $options{debug});  # Make sure the directory exists
 
-my $sha1sum = Digest::SHA1->sha1_hex(Dumper(\@cmd));
+my $sha1sum;
+try {$sha1sum = Digest::SHA1->sha1_hex(Dumper(\@cmd));}
+finally {$sha1sum = Digest::SHA->sha1_hex(Dumper(\@cmd));};
+
 print "Command SHA1: $sha1sum\n" if ($options{debug});
 
 my $jobdir = File::Spec->catfile($WORKDIR, $sha1sum);
@@ -94,7 +99,8 @@ if ($options{jitter})
   # we get a consistent random number.  We want to run the registration at a
   # consistent time on each individual box, but randomize the runs across
   # the environment.
-  srand(hex(substr(Digest::SHA1->sha1_hex(hostname()), -8)));
+  try {srand(hex(substr(Digest::SHA1->sha1_hex(hostname()), -8)));}
+  finally {srand(hex(substr(Digest::SHA->sha1_hex(hostname()), -8)));};
   
   my $delay = int(rand(parse_time_delta($options{jitter})));
   print "Jitter delay of $delay seconds\n" if ($options{debug});
