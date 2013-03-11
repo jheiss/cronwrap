@@ -1,4 +1,4 @@
-VER=0.0.4
+VER=0.0.5
 # Semantic Versioning (http://semver.org/) compliant tag name
 TAGNAME=v$(VER)
 
