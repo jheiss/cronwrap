@@ -42,3 +42,7 @@ jobs that might fail occasionally due to extenuating circumstances but for
 which the occasional failure is not a big deal as long as it the job starts
 running successfully again soon.
 
+# Downloads #
+
+Tarballs available from the
+[tags](https://github.com/jheiss/cronwrap/tags) page.
