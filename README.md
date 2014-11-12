@@ -56,3 +56,7 @@ running successfully again soon.
 
 Tarballs available from the
 [tags](https://github.com/jheiss/cronwrap/tags) page.
+
+# Alternative #
+
+I now have a version of cronwrap with the same functionality written in Go at https://github.com/jheiss/gocronwrap
